@@ -25,7 +25,7 @@ export async function userLogin(data) {
     body: JSON.stringify(data),
   });
 
-  const responseData = res.json();
+  const responseData = await res.json();
 
   if (!res.ok) throw new Error(responseData.msg || "Login failed.");
   return responseData;
