@@ -1,0 +1,33 @@
+{
+  "name": "where-s-waldo-api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.js",
+    "prod": "npx prisma migrate dev --name init",
+    "seedtest": "dotenv -e .env.test -- node seed.js",
+    "seetestdb": "dotenv -e .env.test -- npx prisma studio",
+    "testdb": "dotenv -e .env.test -- npx prisma db push ",
+    "test": "dotenv -e .env.test -- node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.6.0",
+    "@prisma/client": "^7.6.0",
+    "bcryptjs": "^3.0.3",
+    "express": "^5.2.1",
+    "express-validator": "^7.3.2",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "jest": "^30.3.0",
+    "prisma": "^7.6.0",
+    "supertest": "^7.2.2"
+  }
+}

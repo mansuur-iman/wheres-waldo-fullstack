@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  username  String   @unique
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  scores       LeaderBoard[]
+  userProgress UserFieldProgress[]
+}
+
+model Field {
+  id            String              @id @default(uuid())
+  name          String
+  thumbnailUrl  String
+  description   String
+  createdAt     DateTime            @default(now())
+  images        Image[]
+  scores        LeaderBoard[]
+  fieldProgress UserFieldProgress[]
+  characters    Character[]
+}
+
+model Image {
+  id            String              @id @default(uuid())
+  imageUrl      String
+  order         Int
+  fieldId       String
+  field         Field               @relation(fields: [fieldId], references: [id])
+  characters    Character[]
+  imageProgress UserFieldProgress[]
+  createdAt     DateTime            @default(now())
+
+  @@index([fieldId])
+}
+
+model Character {
+  id   String @id @default(uuid())
+  name String
+
+  fieldId String
+  Field   Field  @relation(fields: [fieldId], references: [id])
+
+  imageId String
+  Image   Image  @relation(fields: [imageId], references: [id])
+
+  xMin Float
+  xMax Float
+  yMin Float
+  yMax Float
+
+  @@unique([name, fieldId])
+  @@index([imageId])
+}
+
+model LeaderBoard {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  timeTaken Int
+  fieldId   String
+  field     Field    @relation(fields: [fieldId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([fieldId, userId])
+}
+
+model UserFieldProgress {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  fieldId        String
+  field          Field     @relation(fields: [fieldId], references: [id])
+  currentImageId String?
+  image          Image?    @relation(fields: [currentImageId], references: [id])
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+  updatedAt      DateTime  @updatedAt
+  completed      Boolean   @default(false)
+
+  foundCharacters String[] @default([])
+
+  @@unique([userId, fieldId])
+  @@index([currentImageId])
+}
