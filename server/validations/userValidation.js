@@ -1,5 +1,5 @@
 import { body } from "express-validator";
-import { findUserByEmail, findUserByUsername } from "./existingData";
+import { findUserByEmail, findUserByUsername } from "./existingData.js";
 
 export function validateUserRegistration() {
   return [

@@ -1,6 +1,7 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
+import cors from "cors";
 import { userRoute } from "./routes/userRoute.js";
 import { fieldRoute } from "./routes/fieldsRoute.js";
 const app = express();
@@ -8,6 +9,7 @@ const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+app.use(cors());
 app.use("/api/v1/users", userRoute);
 app.use("/api/v1/fields", fieldRoute);
 
