@@ -1,8 +1,8 @@
 import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
-import { userRoute } from "./routes/userRoute";
-import { fieldRoute } from "./routes/fieldsRoute";
+import { userRoute } from "./routes/userRoute.js";
+import { fieldRoute } from "./routes/fieldsRoute.js";
 const app = express();
 
 app.use(express.urlencoded({ extended: true }));
