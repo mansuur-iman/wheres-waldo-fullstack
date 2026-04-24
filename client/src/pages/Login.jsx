@@ -34,6 +34,8 @@ export function Login() {
       setLoading(true);
       const data = await userLogin(formData);
       console.log("Success", data);
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", data.user);
       navigate("/");
     } catch (err) {
       console.error("Login Error", err);
