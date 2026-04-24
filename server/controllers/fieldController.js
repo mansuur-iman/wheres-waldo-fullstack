@@ -9,6 +9,7 @@ import {
   determineNextImageFlow,
   calculateTimeTaken,
   determinePlayerResult,
+  formatImageResponse,
 } from "../services/fieldService.js";
 
 export const getFields = async (req, res, next) => {
@@ -49,6 +50,9 @@ export const getFirstFieldImage = async (req, res, next) => {
           orderBy: {
             createdAt: "asc",
           },
+          include: {
+            characters: true,
+          },
         },
       },
     });
@@ -78,7 +82,9 @@ export const getFirstFieldImage = async (req, res, next) => {
           currentImageId: descision.image.id,
         },
       });
-      return res.status(descision.status).json({ image: descision.image });
+      return res
+        .status(descision.status)
+        .json(formatImageResponse(descision.image, newProgress));
     }
 
     if (descision.action === "RETURN_CURRENT") {
@@ -86,9 +92,12 @@ export const getFirstFieldImage = async (req, res, next) => {
         where: {
           id: descision.imageId,
         },
+        include: {
+          characters: true,
+        },
       });
 
-      return res.status(200).json({ image: currentImage });
+      return res.status(200).json(formatImageResponse(currentImage, progress));
     }
   } catch (err) {
     next(err);
@@ -109,18 +118,43 @@ export const getNextImage = async (req, res, next) => {
     const currentImage = progress
       ? await prisma.image.findUnique({
           where: { id: progress.currentImageId },
+          include: {
+            characters: true,
+          },
         })
       : null;
 
-    const nextImage = currentImage
-      ? await prisma.image.findFirst({
-          where: {
-            fieldId,
-            order: { gt: currentImage.order },
-          },
-          orderBy: { order: "asc" },
-        })
-      : null;
+    if (!progress || !currentImage) {
+      return res.status(400).json({
+        msg: "No active game progress",
+      });
+    }
+
+    const imageCharactersIds = currentImage.characters.map((char) => char.id);
+
+    const allFound = imageCharactersIds.every((id) => {
+      return progress.foundCharacters.includes(id);
+    });
+
+    if (!allFound) {
+      return res.status(400).json({
+        msg: "Incomplete",
+        remaining: imageCharactersIds.filter(
+          (id) => !progress.foundCharacters.includes(id),
+        ),
+      });
+    }
+
+    const nextImage = await prisma.image.findFirst({
+      where: {
+        fieldId,
+        order: { gt: currentImage.order },
+      },
+      orderBy: { order: "asc" },
+      include: {
+        characters: true,
+      },
+    });
 
     const decision = determineNextImageFlow(progress, nextImage);
 
@@ -165,7 +199,9 @@ export const getNextImage = async (req, res, next) => {
       },
     });
 
-    return res.status(200).json({ image: nextImage });
+    progress.currentImageId = decision.nextImageId;
+
+    return res.status(200).json(formatImageResponse(nextImage, progress));
   } catch (err) {
     next(err);
   }

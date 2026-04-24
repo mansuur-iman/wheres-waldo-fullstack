@@ -84,3 +84,17 @@ export const determinePlayerResult = (
     character,
   };
 };
+
+export function formatImageResponse(image, progress) {
+  return {
+    image: {
+      id: image.id,
+      url: image.imageUrl,
+    },
+    characters: image.characters.map((char) => ({
+      id: char.id,
+      name: char.name,
+      found: progress?.foundCharacters.includes(char.id) || false,
+    })),
+  };
+}
