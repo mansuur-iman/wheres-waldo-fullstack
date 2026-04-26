@@ -9,7 +9,7 @@ async function seed() {
   await prisma.image.deleteMany();
   await prisma.field.deleteMany();
 
-  const toPercent = (num) => num / 100;
+  const toPercent = (num) => num * 100;
 
   const fieldsData = [
     {
