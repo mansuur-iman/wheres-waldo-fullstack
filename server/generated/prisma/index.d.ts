@@ -8750,6 +8750,7 @@ export namespace Prisma {
 
   export type LeaderBoardWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    userId_fieldId?: LeaderBoardUserIdFieldIdCompoundUniqueInput
     AND?: LeaderBoardWhereInput | LeaderBoardWhereInput[]
     OR?: LeaderBoardWhereInput[]
     NOT?: LeaderBoardWhereInput | LeaderBoardWhereInput[]
@@ -8759,7 +8760,7 @@ export namespace Prisma {
     createdAt?: DateTimeFilter<"LeaderBoard"> | Date | string
     user?: XOR<UserScalarRelationFilter, UserWhereInput>
     field?: XOR<FieldScalarRelationFilter, FieldWhereInput>
-  }, "id">
+  }, "id" | "userId_fieldId">
 
   export type LeaderBoardOrderByWithAggregationInput = {
     id?: SortOrder
@@ -9573,6 +9574,11 @@ export namespace Prisma {
   export type UserScalarRelationFilter = {
     is?: UserWhereInput
     isNot?: UserWhereInput
+  }
+
+  export type LeaderBoardUserIdFieldIdCompoundUniqueInput = {
+    userId: string
+    fieldId: string
   }
 
   export type LeaderBoardCountOrderByAggregateInput = {
