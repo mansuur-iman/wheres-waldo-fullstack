@@ -9,7 +9,7 @@ export async function getFields() {
 }
 
 export async function getFirstImage(token, fieldId) {
-  const res = await fetch(`${BASE_URL}/fields/${fieldId}/firts`, {
+  const res = await fetch(`${BASE_URL}/fields/${fieldId}/images/first`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
@@ -32,7 +32,11 @@ export async function sendGuess(token, fieldId, x, y, characterName) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(x, y, characterName),
+    body: JSON.stringify({
+      xPosition: x,
+      yPosition: y,
+      characterName,
+    }),
   });
 
   const responseData = await res.json();
@@ -43,11 +47,11 @@ export async function sendGuess(token, fieldId, x, y, characterName) {
 }
 
 export const nextImage = async (token, fieldId) => {
-  const res = await fetch(`${BASE_URL}/fields/${fieldId}/next`, {
+  const res = await fetch(`${BASE_URL}/fields/${fieldId}/images/next`, {
     method: "GET",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Beraer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 
@@ -57,3 +61,14 @@ export const nextImage = async (token, fieldId) => {
 
   return responseData;
 };
+
+export async function getLeaders(fieldId) {
+  const res = await fetch(`${BASE_URL}/fields/${fieldId}/leaders`, {
+    method: "GET",
+  });
+
+  const responseData = await res.json();
+
+  if (!res.ok) throw new Error(responseData.msg || "Failed to fetch leaders.");
+  return responseData;
+}

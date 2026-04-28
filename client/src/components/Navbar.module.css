@@ -1,0 +1,40 @@
+.nav {
+  display: flex;
+  justify-content: center;
+
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.2rem;
+  background-color: var(--bg);
+  color: var(--text);
+}
+.left {
+  display: flex;
+  font-size: 1.1rem;
+}
+.logo {
+  font-size: 2rem;
+  font-weight: bold;
+  text-decoration: none;
+  color: var(--accent);
+}
+.login {
+  padding: 1rem;
+  border: 1px solid var(--accent);
+  background-color: transparent;
+  color: var(--text);
+}
+.login:hover {
+  border: none;
+  background: var(--accent);
+}
+.register {
+  padding: 1rem;
+  border: none;
+  background-color: var(--accent);
+  color: var(--text);
+}
+.register:hover {
+  border: apx solid var(--accent);
+  background-color: none;
+}

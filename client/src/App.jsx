@@ -5,6 +5,7 @@ import { Login } from "./pages/Login";
 import ErrorPage from "./pages/ErrorPage";
 import Home from "./pages/Home";
 import Layout from "./components/Layout";
+import Game from "./pages/Game";
 
 function App() {
   const routes = createBrowserRouter([
@@ -24,6 +25,10 @@ function App() {
         {
           path: "/login",
           element: <Login />,
+        },
+        {
+          path: "/field/:id",
+          element: <Game />,
         },
       ],
     },

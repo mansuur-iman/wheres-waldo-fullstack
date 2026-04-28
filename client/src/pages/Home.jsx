@@ -13,7 +13,7 @@ export default function Home() {
         setLoading(true);
         const data = await getFields();
         console.log("All fields", data);
-        setFields(data.fields);
+        setFields(data);
       } catch (err) {
         console.error("Fields Error", err);
         setError(err.message);
@@ -28,7 +28,7 @@ export default function Home() {
       {loading && <p>loading...</p>}
       {error && <p>{error}</p>}
       <h1>Choose a field to play</h1>
-      {fields.map((field) => (
+      {fields?.map((field) => (
         <Link key={field.id} to={`/field/${field.id}`}>
           <div>
             <h3>{field.name}</h3>

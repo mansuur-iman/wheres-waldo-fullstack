@@ -1,4 +1,4 @@
-export const BASE_URL = "https://myapp.com/api/v1";
+export const BASE_URL = "https://wheres-waldo-fullstack.onrender.com/api/v1";
 export async function register(data) {
   const res = await fetch(`${BASE_URL}/users/register`, {
     method: "POST",
