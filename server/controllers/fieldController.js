@@ -23,7 +23,7 @@ export const getFields = async (req, res, next) => {
       skip: skip,
       take: limitNumber,
       orderBy: {
-        timeTaken: order,
+        createdAt: order,
       },
       select: {
         id: true,
