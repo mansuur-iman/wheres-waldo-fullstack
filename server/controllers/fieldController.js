@@ -43,61 +43,92 @@ export const getFirstFieldImage = async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const { fieldId } = req.params;
+
     const field = await prisma.field.findUnique({
       where: { id: fieldId },
       include: {
         images: {
-          orderBy: {
-            createdAt: "asc",
-          },
-          include: {
-            characters: true,
-          },
+          orderBy: { createdAt: "asc" },
+          include: { characters: true },
         },
       },
     });
 
     const progress = await prisma.userFieldProgress.findUnique({
       where: {
-        userId_fieldId: {
-          userId,
-          fieldId,
-        },
+        userId_fieldId: { userId, fieldId },
       },
     });
 
-    const descision = determineResponse(field, progress);
+    const decision = determineResponse(field, progress);
 
-    if (descision.error) {
+    if (decision.error) {
       return res
-        .status(descision.error.status)
-        .json({ msg: descision.error.msg });
+        .status(decision.error.status)
+        .json({ msg: decision.error.msg });
     }
 
-    if (descision.action === "CREATE_PROGRESS") {
+    // 🟢 CREATE NEW PROGRESS
+    if (decision.action === "CREATE_PROGRESS") {
       const newProgress = await prisma.userFieldProgress.create({
         data: {
           userId,
           fieldId,
-          currentImageId: descision.image.id,
+          currentImageId: decision.image.id,
         },
       });
+
       return res
-        .status(descision.status)
-        .json(formatImageResponse(descision.image, newProgress));
+        .status(200)
+        .json(formatImageResponse(decision.image, newProgress));
     }
 
-    if (descision.action === "RETURN_CURRENT") {
+    // 🟡 CONTINUE GAME
+    if (decision.action === "RETURN_CURRENT") {
       const currentImage = await prisma.image.findUnique({
-        where: {
-          id: descision.imageId,
-        },
-        include: {
-          characters: true,
-        },
+        where: { id: decision.imageId },
+        include: { characters: true },
       });
 
       return res.status(200).json(formatImageResponse(currentImage, progress));
+    }
+
+    // 🏁 COMPLETED GAME
+    if (decision.action === "RETURN_COMPLETED") {
+      const [userResult, leaders] = await Promise.all([
+        prisma.leaderBoard.findUnique({
+          where: {
+            userId_fieldId: { userId, fieldId },
+          },
+        }),
+        prisma.leaderBoard.findMany({
+          where: { fieldId },
+          orderBy: { timeTaken: "asc" },
+          take: 10,
+          include: {
+            user: { select: { username: true } },
+          },
+        }),
+      ]);
+
+      let rank = null;
+
+      if (userResult) {
+        const betterPlayers = await prisma.leaderBoard.count({
+          where: {
+            fieldId,
+            timeTaken: { lt: userResult.timeTaken },
+          },
+        });
+        rank = betterPlayers + 1;
+      }
+
+      return res.status(200).json({
+        completed: true,
+        timeTaken: userResult?.timeTaken ?? null,
+        leaders,
+        rank,
+      });
     }
   } catch (err) {
     next(err);
@@ -118,9 +149,7 @@ export const getNextImage = async (req, res, next) => {
     const currentImage = progress
       ? await prisma.image.findUnique({
           where: { id: progress.currentImageId },
-          include: {
-            characters: true,
-          },
+          include: { characters: true },
         })
       : null;
 
@@ -130,16 +159,16 @@ export const getNextImage = async (req, res, next) => {
       });
     }
 
-    const imageCharactersIds = currentImage.characters.map((char) => char.id);
+    const imageCharacterIds = currentImage.characters.map((c) => c.id);
 
-    const allFound = imageCharactersIds.every((id) => {
-      return progress.foundCharacters.includes(id);
-    });
+    const allFound = imageCharacterIds.every((id) =>
+      progress.foundCharacters.includes(id),
+    );
 
     if (!allFound) {
       return res.status(400).json({
         msg: "Incomplete",
-        remaining: imageCharactersIds.filter(
+        remaining: imageCharacterIds.filter(
           (id) => !progress.foundCharacters.includes(id),
         ),
       });
@@ -151,9 +180,7 @@ export const getNextImage = async (req, res, next) => {
         order: { gt: currentImage.order },
       },
       orderBy: { order: "asc" },
-      include: {
-        characters: true,
-      },
+      include: { characters: true },
     });
 
     const decision = determineNextImageFlow(progress, nextImage);
@@ -164,8 +191,10 @@ export const getNextImage = async (req, res, next) => {
         .json({ msg: decision.error.msg });
     }
 
+    // 🏁 COMPLETE FIELD
     if (decision.action === "COMPLETE_FIELD") {
       const completedAt = new Date();
+      const timeTaken = calculateTimeTaken(progress.startedAt, completedAt);
 
       await prisma.userFieldProgress.update({
         where: {
@@ -178,18 +207,52 @@ export const getNextImage = async (req, res, next) => {
         },
       });
 
-      const timeTaken = calculateTimeTaken(progress.startedAt, completedAt);
-
-      await prisma.leaderBoard.create({
-        data: { userId, fieldId, timeTaken },
+      // ✅ Keep best time only
+      const existingEntry = await prisma.leaderBoard.findUnique({
+        where: {
+          userId_fieldId: { userId, fieldId },
+        },
       });
 
+      if (!existingEntry) {
+        await prisma.leaderBoard.create({
+          data: { userId, fieldId, timeTaken },
+        });
+      } else if (timeTaken < existingEntry.timeTaken) {
+        await prisma.leaderBoard.update({
+          where: {
+            userId_fieldId: { userId, fieldId },
+          },
+          data: { timeTaken },
+        });
+      }
+
+      const [leaders, betterCount] = await Promise.all([
+        prisma.leaderBoard.findMany({
+          where: { fieldId },
+          orderBy: { timeTaken: "asc" },
+          take: 10,
+          include: {
+            user: { select: { username: true } },
+          },
+        }),
+        prisma.leaderBoard.count({
+          where: {
+            fieldId,
+            timeTaken: { lt: timeTaken },
+          },
+        }),
+      ]);
+
       return res.status(200).json({
-        msg: "Field Completed!",
+        completed: true,
         timeTaken,
+        leaders,
+        rank: betterCount + 1,
       });
     }
 
+    // 🟡 MOVE TO NEXT IMAGE
     await prisma.userFieldProgress.update({
       where: {
         userId_fieldId: { userId, fieldId },
@@ -199,9 +262,14 @@ export const getNextImage = async (req, res, next) => {
       },
     });
 
-    progress.currentImageId = decision.nextImageId;
+    const updatedProgress = {
+      ...progress,
+      currentImageId: decision.nextImageId,
+    };
 
-    return res.status(200).json(formatImageResponse(nextImage, progress));
+    return res
+      .status(200)
+      .json(formatImageResponse(nextImage, updatedProgress));
   } catch (err) {
     next(err);
   }

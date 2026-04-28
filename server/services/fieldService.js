@@ -20,7 +20,7 @@ export const determineResponse = (field, progress) => {
 
   if (progress.completed) {
     return {
-      error: { status: 200, msg: "Field already Completed." },
+      action: "RETURN_COMPLETED",
     };
   }
 
