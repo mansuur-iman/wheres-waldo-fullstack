@@ -1,7 +1,41 @@
 .layout {
+  display: flex;
+  flex-direction: column;
+  /* Minimum height of the full screen */
+  min-height: 100vh;
+  /* Smoothly transition background if the theme changes */
+  transition: background-color 0.3s ease;
+  background-color: var(--bg-primary);
+}
+
+main {
+  /* This tells the main content to grow and take up all available space */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
+  padding: 2rem;
+  /* Ensures the game board doesn't feel cramped */
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* A nice entrance animation for page transitions */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Tablet and Mobile adjustments */
+@media (max-width: 768px) {
+  main {
+    padding: 1rem;
+  }
 }

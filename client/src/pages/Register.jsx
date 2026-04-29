@@ -2,6 +2,7 @@ import { useState } from "react";
 import { register } from "../services/authService";
 import { useNavigate } from "react-router";
 import { validate } from "../utils/validateRegister";
+import styles from "./Register.module.css"; // Added styles
 
 export default function RegisterUser() {
   const [formData, setFormData] = useState({
@@ -17,20 +18,12 @@ export default function RegisterUser() {
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-
-    setErrors({
-      ...errors,
-      [e.target.name]: "",
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setErrors({ ...errors, [e.target.name]: "" });
   };
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-
     const validation = validate(formData);
 
     if (Object.keys(validation).length > 0) {
@@ -40,11 +33,9 @@ export default function RegisterUser() {
 
     try {
       setLoading(true);
-      const data = await register(formData);
+      await register(formData);
       navigate("/login");
-      console.log("API response:", data);
     } catch (err) {
-      console.error("Register failed:", err.message);
       setErrors({ apiError: err.message });
     } finally {
       setLoading(false);
@@ -52,65 +43,89 @@ export default function RegisterUser() {
   };
 
   return (
-    <div>
-      {loading && <p>loading....</p>}
-      <h2>Create Account</h2>
-      {errors.apiError && <p>{errors.apiError}</p>}
-      <form onSubmit={handleFormSubmit}>
-        <div>
-          <input
-            type="text"
-            name="username"
-            placeholder="username"
-            value={formData.username}
-            onChange={handleChange}
-            autoComplete="username"
-            required
-          />
-          {errors.username && <p>{errors.username}</p>}
-        </div>
+    <div className={styles.wrapper}>
+      <div className={styles.registerCard}>
+        <h2 className={styles.title}>Join the Hunt</h2>
+        <p className={styles.subtitle}>
+          Create an account to track your scores.
+        </p>
 
-        <div>
-          <input
-            type="email"
-            name="email"
-            onChange={handleChange}
-            placeholder="Email"
-            value={formData.email}
-            autoComplete="email"
-            required
-          />
-          {errors.email && <p>{errors.email}</p>}
-        </div>
+        {errors.apiError && (
+          <div className={styles.errorMessage}>{errors.apiError}</div>
+        )}
 
-        <div>
-          <input
-            type="password"
-            name="password"
-            onChange={handleChange}
-            placeholder="password"
-            value={formData.password}
-            required
-          />
-          {errors.password && <p>{errors.password}</p>}
-        </div>
+        <form onSubmit={handleFormSubmit} className={styles.form}>
+          <div className={styles.inputGroup}>
+            <label className={styles.label}>Username</label>
+            <input
+              type="text"
+              name="username"
+              className={`${styles.input} ${errors.username ? styles.inputError : ""}`}
+              placeholder="CoolFinder123"
+              value={formData.username}
+              onChange={handleChange}
+              autoComplete="username"
+              required
+            />
+            {errors.username && (
+              <span className={styles.errorText}>{errors.username}</span>
+            )}
+          </div>
 
-        <div>
-          <input
-            type="password"
-            name="confirmPassword"
-            onChange={handleChange}
-            placeholder="confirmPassword"
-            value={formData.confirmPassword}
-            required
-          />
-          {errors.confirmPassword && <p>{errors.confirmPassword}</p>}
-        </div>
+          <div className={styles.inputGroup}>
+            <label className={styles.label}>Email Address</label>
+            <input
+              type="email"
+              name="email"
+              className={`${styles.input} ${errors.email ? styles.inputError : ""}`}
+              onChange={handleChange}
+              placeholder="waldo@example.com"
+              value={formData.email}
+              autoComplete="email"
+              required
+            />
+            {errors.email && (
+              <span className={styles.errorText}>{errors.email}</span>
+            )}
+          </div>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Saving..." : "Register"}
-        </button>
-      </form>
+          <div className={styles.inputGroup}>
+            <label className={styles.label}>Password</label>
+            <input
+              type="password"
+              name="password"
+              className={`${styles.input} ${errors.password ? styles.inputError : ""}`}
+              onChange={handleChange}
+              placeholder="••••••••"
+              value={formData.password}
+              required
+            />
+            {errors.password && (
+              <span className={styles.errorText}>{errors.password}</span>
+            )}
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label className={styles.label}>Confirm Password</label>
+            <input
+              type="password"
+              name="confirmPassword"
+              className={`${styles.input} ${errors.confirmPassword ? styles.inputError : ""}`}
+              onChange={handleChange}
+              placeholder="••••••••"
+              value={formData.confirmPassword}
+              required
+            />
+            {errors.confirmPassword && (
+              <span className={styles.errorText}>{errors.confirmPassword}</span>
+            )}
+          </div>
+
+          <button type="submit" className={styles.submitBtn} disabled={loading}>
+            {loading ? "Creating Account..." : "Register Now"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

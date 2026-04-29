@@ -63,7 +63,7 @@ export const nextImage = async (token, fieldId) => {
 };
 
 export async function getLeaders(fieldId) {
-  const res = await fetch(`${BASE_URL}/fields/${fieldId}/leaders`, {
+  const res = await fetch(`${BASE_URL}/fields/${fieldId}/leaders&&sort=asc`, {
     method: "GET",
   });
 

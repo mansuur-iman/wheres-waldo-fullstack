@@ -1,22 +1,43 @@
 import { Link } from "react-router";
+import { Moon, Sun } from "lucide-react";
 import styles from "./Navbar.module.css";
+import { useTheme } from "../context/useTheme";
+import { useAuth } from "../context/useAuth";
 
 export default function Navbar() {
+  const { theme, toggleTheme } = useTheme();
+  const { user } = useAuth();
+
   return (
-    <div>
-      <nav className={styles.nav}>
-        <Link to="/">
-          <h1 className={styles.logo}>Where's Waldo?</h1>
+    <nav className={styles.nav}>
+      <div className={styles.container}>
+        <Link to="/" className={styles.logoLink}>
+          <h1 className={styles.logo}>
+            Where&apos;s <span className={styles.accent}>Waldo?</span>
+          </h1>
         </Link>
-        <div className={styles.left}>
-          <Link to="/login">
-            <button className={styles.login}>Login</button>
-          </Link>
-          <Link to="/register">
-            <button className={styles.register}>Register</button>
-          </Link>
+
+        <div className={styles.right}>
+          <button
+            onClick={toggleTheme}
+            className={styles.themeToggle}
+            aria-label="Toggle theme"
+          >
+            {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
+          </button>
+
+          <div className={styles.actions}>
+            <Link to="/login" className={styles.login}>
+              Login
+            </Link>
+            {!user && (
+              <Link to="/register" className={styles.register}>
+                Register
+              </Link>
+            )}
+          </div>
         </div>
-      </nav>
-    </div>
+      </div>
+    </nav>
   );
 }

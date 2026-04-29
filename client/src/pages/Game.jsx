@@ -1,16 +1,13 @@
 import { useAuth } from "../context/useAuth";
-import { useEffect, useState, useRef } from "react";
-import {
-  getFirstImage,
-  sendGuess,
-  nextImage,
-  getLeaders,
-} from "../services/fieldService";
-import { useParams } from "react-router";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useParams, useNavigate } from "react-router";
+import { getFirstImage, sendGuess, nextImage } from "../services/fieldService";
+import styles from "./Game.module.css";
 
 export default function Game() {
   const { token } = useAuth();
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const [currentImage, setCurrentImage] = useState(null);
   const [characters, setCharacters] = useState([]);
@@ -19,86 +16,145 @@ export default function Game() {
   const [error, setError] = useState(null);
   const [message, setMessage] = useState(null);
   const [leaders, setLeaders] = useState([]);
+  const [playerRank, setPlayerRank] = useState(null);
   const [fieldComplete, setFieldComplete] = useState(false);
 
-  // ─── TIMER ───
   const [elapsed, setElapsed] = useState(0);
+  const [finalTime, setFinalTime] = useState(null);
   const timerRef = useRef(null);
   const startTimeRef = useRef(null);
 
-  const canvasRef = useRef(null);
-  const imgRef = useRef(null);
+  const containerRef = useRef(null);
 
-  const formatTime = (seconds) => {
+  const TIMER_KEY = `game_timer_${id}`;
+
+  const formatTime = (seconds = 0) => {
     const m = Math.floor(seconds / 60)
       .toString()
       .padStart(2, "0");
-    const s = (seconds % 60).toString().padStart(2, "0");
+
+    const s = Math.floor(seconds % 60)
+      .toString()
+      .padStart(2, "0");
+
     return `${m}:${s}`;
   };
+  const startTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
 
-  const startTimer = () => {
-    startTimeRef.current = Date.now() - elapsed * 1000;
-    timerRef.current = setInterval(() => {
+    let startTime = localStorage.getItem(TIMER_KEY);
+
+    if (!startTime) {
+      startTime = Date.now();
+      localStorage.setItem(TIMER_KEY, startTime);
+    } else {
+      startTime = parseInt(startTime, 10);
+    }
+
+    startTimeRef.current = startTime;
+
+    const update = () => {
       setElapsed(Math.floor((Date.now() - startTimeRef.current) / 1000));
-    }, 1000);
-  };
+    };
+
+    update();
+
+    timerRef.current = setInterval(update, 1000);
+  }, [TIMER_KEY]);
 
   const stopTimer = () => {
-    clearInterval(timerRef.current);
+    if (timerRef.current) clearInterval(timerRef.current);
   };
 
-  const fetchLeaders = async () => {
-    try {
-      const data = await getLeaders(id);
-      setLeaders(data.leaders || []);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const clearTimer = useCallback(() => {
+    localStorage.removeItem(TIMER_KEY);
+    stopTimer();
+  }, [TIMER_KEY]);
 
-  // ─── LOAD IMAGE ───
   useEffect(() => {
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopTimer();
+      } else {
+        startTimer();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibility);
+  }, [startTimer]);
+
+  useEffect(() => {
+    let isMounted = true;
+
     const load = async () => {
       setLoading(true);
       try {
         const data = await getFirstImage(token, id);
+
+        if (!isMounted) return;
+
+        if (data.completed) {
+          setFieldComplete(true);
+          setFinalTime(data.timeTaken);
+          setLeaders(data.leaders || []);
+          setPlayerRank(data.rank || null);
+          setLoading(false);
+          return;
+        }
+
         setCurrentImage(data.image);
         setCharacters(data.characters || []);
-        startTimer(); // start timer when game loads
+        startTimer();
       } catch (e) {
-        console.error(e);
-        setError(e.message || "Error loading game");
+        if (isMounted) {
+          setError(e.message || "Error loading game");
+        }
       }
-      setLoading(false);
+
+      if (isMounted) setLoading(false);
     };
 
     load();
-    fetchLeaders();
 
-    return () => stopTimer(); // cleanup on unmount
-  }, [token, id]);
+    return () => {
+      isMounted = false;
+      clearTimer();
+    };
+  }, [token, id, startTimer, clearTimer]);
 
-  // ─── GET CLICK POSITION ───
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setSelection(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!message) return;
+    const t = setTimeout(() => setMessage(null), 2000);
+    return () => clearTimeout(t);
+  }, [message]);
+
   const getPos = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
+    const rect = e.currentTarget.getBoundingClientRect();
     return {
       x: ((e.clientX - rect.left) / rect.width) * 100,
       y: ((e.clientY - rect.top) / rect.height) * 100,
     };
   };
 
-  // ─── HANDLE CLICK ───
-  const handleClick = (e) => {
-    const pos = getPos(e);
-    setSelection(pos);
+  const handleImageClick = (e) => {
+    setSelection(getPos(e));
   };
 
-  // ─── HANDLE GUESS ───
   const handleGuess = async (characterName) => {
     if (!selection || loading) return;
     setLoading(true);
-
     try {
       const data = await sendGuess(
         token,
@@ -107,9 +163,8 @@ export default function Game() {
         selection.y,
         characterName,
       );
-
       if (data.correct) {
-        setMessage("✅ Correct!");
+        setMessage(" Correct!");
         setCharacters((prev) =>
           prev.map((c) =>
             c.name === characterName ? { ...c, found: true } : c,
@@ -117,252 +172,186 @@ export default function Game() {
         );
         setSelection(null);
       } else {
-        setMessage("❌ Wrong! Try again.");
+        setMessage(" Try again!");
+        setSelection(null);
       }
     } catch (e) {
-      console.error(e);
-      alert(e.message || "Error sending guess");
+      alert(e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  // ─── NEXT IMAGE ───
   const handleNext = async () => {
     setLoading(true);
     setSelection(null);
     setMessage(null);
+
     try {
       const data = await nextImage(token, id);
 
-      // backend returns null/empty when no more images
-      if (!data.image) {
-        stopTimer();
+      if (data.completed) {
+        clearTimer();
+        setFinalTime(data.timeTaken);
+        setLeaders(data.leaders || []);
+        setPlayerRank(data.rank || null);
         setFieldComplete(true);
-        fetchLeaders(); // refresh leaderboard on completion
-        setLoading(false);
         return;
       }
 
       setCurrentImage(data.image);
       setCharacters(data.characters || []);
     } catch (e) {
-      // treat a 404 or similar as field complete
-      stopTimer();
-      setFieldComplete(true);
-      fetchLeaders();
+      setError(e.message);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
+  };
+
+  const getDropdownStyle = (sel) => {
+    const flipY = sel.y > 70;
+    const flipX = sel.x > 75;
+    return {
+      top: flipY ? "auto" : "60px",
+      bottom: flipY ? "60px" : "auto",
+      left: flipX ? "auto" : "50%",
+      right: flipX ? "0" : "auto",
+      transform: flipX ? "none" : "translateX(-50%)",
+    };
   };
 
   const availableChars = characters.filter((c) => !c.found);
   const allFound = characters.length > 0 && availableChars.length === 0;
 
-  // ─── FIELD COMPLETE SCREEN ───
+  if (error) {
+    return (
+      <div className={styles.errorScreen}>
+        <p>{error}</p>
+        <button onClick={() => navigate("/")}>Back to Mission Select</button>
+      </div>
+    );
+  }
+  if (loading && !currentImage) {
+    return (
+      <div className={styles.fullLoader}>
+        <div className={styles.spinner}></div>
+        <p>Loading mission...</p>
+      </div>
+    );
+  }
+
   if (fieldComplete) {
     return (
-      <div
-        style={{
-          background: "#111",
-          color: "#fff",
-          minHeight: "100vh",
-          padding: "20px",
-          textAlign: "center",
-        }}
-      >
-        <h1 style={{ color: "lime", marginTop: "80px" }}>🎉 Field Complete!</h1>
-        <p style={{ fontSize: "20px" }}>
-          You finished in{" "}
-          <strong style={{ color: "yellow" }}>{formatTime(elapsed)}</strong>
-        </p>
-
-        {leaders.length > 0 && (
-          <div style={{ marginTop: "40px" }}>
-            <h3>Leaderboard</h3>
-            <ol style={{ display: "inline-block", textAlign: "left" }}>
-              {leaders.map((l, index) => (
-                <li key={index} style={{ marginBottom: "8px" }}>
-                  {l.user?.username ?? l.username} —{" "}
-                  <strong style={{ color: "yellow" }}>
-                    {formatTime(l.timeTaken)}
-                  </strong>
-                </li>
-              ))}
-            </ol>
+      <div className={styles.completeScreen}>
+        <div className={styles.mainVictoryArea}>
+          <h1 className={styles.victoryTitle}>MISSION COMPLETE</h1>
+          <div className={styles.finalScoreCard}>
+            <span className={styles.label}>Official Finish Time:</span>
+            <span className={styles.finalValue}>{formatTime(finalTime)}</span>
           </div>
-        )}
+          {playerRank !== null && (
+            <div className={styles.rankBadge}>
+              You ranked <strong>#{playerRank}</strong> on this mission
+            </div>
+          )}
+          <button onClick={() => navigate("/")} className={styles.playAgainBtn}>
+            Return to Mission Select
+          </button>
+        </div>
+
+        <aside className={styles.leaderboardSidebar}>
+          <h3 className={styles.sidebarTitle}>Leaders</h3>
+          <div className={styles.leaderList}>
+            {leaders.map((l, i) => (
+              <div key={l.id || i} className={styles.leaderRow}>
+                <span className={styles.rank}>{i + 1}</span>
+                <span className={styles.name}>
+                  {l.user?.username ?? "Anonymous"}
+                </span>
+                <span className={styles.time}>{formatTime(l.timeTaken)}</span>
+              </div>
+            ))}
+          </div>
+        </aside>
       </div>
     );
   }
 
   return (
-    <div
-      style={{
-        background: "#111",
-        color: "#fff",
-        minHeight: "100vh",
-        padding: "20px",
-      }}
-    >
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {message && <p>{message}</p>}
-
-      {/* ─── HEADER ROW ─── */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "flex-start",
-        }}
-      >
-        {/* ─── TARGET LIST ─── */}
-        <div>
-          <h3>Target Characters:</h3>
-          <ol>
-            {characters.map((c) => (
-              <li
-                key={c.id}
-                style={{
-                  marginRight: "15px",
-                  color: c.found ? "lime" : "white",
-                }}
-              >
-                {c.name} {c.found ? "✅" : "⚪"}
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        {/* ─── TIMER ─── */}
-        <div
-          style={{
-            fontSize: "28px",
-            fontWeight: "bold",
-            fontFamily: "monospace",
-            color: "yellow",
-            padding: "10px 20px",
-            border: "2px solid yellow",
-            borderRadius: "8px",
-          }}
-        >
-          ⏱ {formatTime(elapsed)}
-        </div>
-      </div>
-
-      <hr />
-
-      {currentImage && (
-        <div
-          style={{
-            position: "relative",
-            display: "inline-block",
-            marginTop: "20px",
-          }}
-        >
-          <img
-            ref={imgRef}
-            src={currentImage.url}
-            alt="game"
-            onLoad={() => {
-              canvasRef.current.width = imgRef.current.width;
-              canvasRef.current.height = imgRef.current.height;
-            }}
-            style={{ display: "block", userSelect: "none" }}
-          />
-
-          <canvas
-            ref={canvasRef}
-            onClick={handleClick}
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              cursor: "crosshair",
-            }}
-          />
-
-          {/* ─── CLICK MARKER ─── */}
-          {selection && (
+    <div className={styles.gameContainer}>
+      <header className={styles.gameHeader}>
+        <div className={styles.targetList}>
+          {characters.map((c) => (
             <div
-              style={{
-                position: "absolute",
-                left: `${selection.x}%`,
-                top: `${selection.y}%`,
-                transform: "translate(-50%, -50%)",
-                width: "10px",
-                height: "10px",
-                background: "yellow",
-                borderRadius: "50%",
-                pointerEvents: "none",
-              }}
-            />
-          )}
-
-          {/* ─── DROPDOWN ─── */}
-          {selection && availableChars.length > 0 && (
-            <div
-              style={{
-                position: "absolute",
-                left: `${selection.x}%`,
-                top: `${selection.y}%`,
-                background: "white",
-                padding: "10px",
-                borderRadius: "5px",
-                zIndex: 100,
-              }}
+              key={c.id}
+              className={`${styles.targetItem} ${c.found ? styles.found : ""}`}
             >
-              <strong style={{ color: "black" }}>Who is this?</strong>
-              {availableChars.map((c) => (
-                <button
-                  key={c.id}
-                  onClick={() => handleGuess(c.name)}
-                  style={{
-                    display: "block",
-                    width: "100%",
-                    textAlign: "left",
-                    marginTop: "5px",
-                    cursor: "pointer",
-                  }}
-                >
-                  {c.name}
-                </button>
-              ))}
+              {c.name}
             </div>
-          )}
+          ))}
         </div>
-      )}
-
-      {/* ─── LEADERBOARD ─── */}
-      {leaders.length > 0 && (
-        <div style={{ marginTop: "30px" }}>
-          <h3>Leaderboard:</h3>
-          <ol>
-            {leaders.map((l, index) => (
-              <li key={index}>
-                {l.user?.username ?? l.username} —{" "}
-                <strong style={{ color: "yellow" }}>
-                  {formatTime(l.timeTaken)}
-                </strong>
-              </li>
-            ))}
-          </ol>
+        <div className={styles.timerDisplay}>
+          ⏱ <span>{formatTime(elapsed)}</span>
         </div>
-      )}
+      </header>
 
-      {/* ─── NEXT BUTTON ─── */}
-      <div style={{ marginTop: "30px" }}>
+      {message && <div className={styles.toast}>{message}</div>}
+
+      <main className={styles.stage}>
+        {currentImage && (
+          <div
+            ref={containerRef}
+            className={styles.imageContainer}
+            onClick={handleImageClick}
+          >
+            <img
+              src={currentImage.url}
+              alt="Game Field"
+              className={styles.gameMap}
+              draggable={false}
+            />
+
+            {selection && (
+              <div
+                className={styles.selectionCircle}
+                style={{ left: `${selection.x}%`, top: `${selection.y}%` }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div
+                  className={styles.dropdown}
+                  style={getDropdownStyle(selection)}
+                >
+                  <p className={styles.dropdownTitle}>Identify Target</p>
+                  {availableChars.length === 0 ? (
+                    <p className={styles.noTargets}>All found!</p>
+                  ) : (
+                    availableChars.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => handleGuess(c.name)}
+                        className={styles.guessBtn}
+                        disabled={loading}
+                      >
+                        {c.name}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </main>
+
+      <footer className={styles.gameControls}>
         <button
           onClick={handleNext}
           disabled={!allFound || loading}
-          style={{
-            padding: "10px 20px",
-            fontSize: "16px",
-            cursor: allFound ? "pointer" : "not-allowed",
-          }}
+          className={styles.nextBtn}
         >
-          {loading ? "Loading..." : "Next Image →"}
+          {loading ? "Processing..." : "Continue →"}
         </button>
-      </div>
+      </footer>
     </div>
   );
 }

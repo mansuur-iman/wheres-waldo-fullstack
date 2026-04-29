@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Aldrich&family=Pacifico&family=Playwrite+DK+Uloopet+Guides&family=Unkempt:wght@400;700&display=swap");
 * {
   padding: 0;
   margin: 0;
@@ -10,36 +11,40 @@ html {
 }
 
 .light {
-  --bg: #f9fafb;
-  --s-bg: #ffffff;
-
-  --text: #111827;
-  --s-text: #6b7280;
-
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-
-  --border: #e5e7eb;
-  --success: #16a34a;
-  --danger: #dc2626;
+  --bg-primary: #f9fafb;
+  --bg-secondary: #ffffff;
+  --text-main: #2d3436;
+  --accent-color: #ff4757; /* Waldo Red */
+  --border-color: #dfe6e9;
+  --shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
+/* Dark Theme - Sleek & Focused */
 .dark {
-  --bg: #0f172a;
-  --s-bg: #1e293b;
-
-  --text: #f1f5f9;
-  --s-text: #94a3b8;
-
-  --accent: #3b82f6;
-  --accent-hover: #60a5fa;
-
-  --border: #334155;
-  --success: #22c55e;
-  --danger: #ef4444;
+  --bg-primary: #010116;
+  --bg-secondary: #0000000;
+  --text-main: #f1f2f6;
+  --accent-color: #e66bff; /* Softer red for dark mode */
+  --border-color: #57606f;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 body {
-  background-color: var(--bg);
-  color: var(--text);
-  line-height: 1.5;
+  background-color: var(--bg-primary);
+  color: var(--text-main);
+
+  line-height: 1.6;
+  min-height: 100vh;
+  font-family: "Aldrich", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+h1,
+h2,
+.button {
+  font-family: "Poppins", sans-serif;
 }

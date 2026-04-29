@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { userLogin } from "../services/authService";
+import styles from "./Login.module.css"; // Added styles
 
 export function Login() {
   const [formData, setFormData] = useState({
@@ -22,23 +23,17 @@ export function Login() {
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.email) {
-      setError("Email is required.");
-      return;
-    }
-    if (!formData.password) {
-      setError("Password is required.");
+    if (!formData.email || !formData.password) {
+      setError("Please fill in all fields.");
       return;
     }
     try {
       setLoading(true);
       const data = await userLogin(formData);
-      console.log("Success", data);
       localStorage.setItem("token", data.token);
-      localStorage.setItem("user", data.user);
+      localStorage.setItem("user", JSON.stringify(data.user)); // Stringify if it's an object
       navigate("/");
     } catch (err) {
-      console.error("Login Error", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -46,33 +41,47 @@ export function Login() {
   };
 
   return (
-    <div>
-      {loading && <p>loading ....</p>}
-      {error && <p>{error}</p>}
-      <h2>Welcome Back.</h2>
-      <form onSubmit={handleFormSubmit}>
-        <input
-          type="email"
-          placeholder="Email"
-          onChange={handleChange}
-          name="email"
-          value={formData.email}
-          autoComplete="email"
-          required
-        />
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          onChange={handleChange}
-          value={formData.password}
-          autoComplete="password"
-          required
-        />
-        <button type="submit" disabled={loading}>
-          {loading ? "Checking.." : "Login"}
-        </button>
-      </form>
+    <div className={styles.wrapper}>
+      <div className={styles.loginCard}>
+        <h2 className={styles.title}>Welcome Back</h2>
+        <p className={styles.subtitle}>Ready to find Waldo?</p>
+
+        {error && <div className={styles.errorMessage}>{error}</div>}
+
+        <form onSubmit={handleFormSubmit} className={styles.form}>
+          <div className={styles.inputGroup}>
+            <label className={styles.label}>Email Address</label>
+            <input
+              type="email"
+              className={styles.input}
+              placeholder="name@example.com"
+              onChange={handleChange}
+              name="email"
+              value={formData.email}
+              autoComplete="email"
+              required
+            />
+          </div>
+
+          <div className={styles.inputGroup}>
+            <label className={styles.label}>Password</label>
+            <input
+              type="password"
+              className={styles.input}
+              name="password"
+              placeholder="••••••••"
+              onChange={handleChange}
+              value={formData.password}
+              autoComplete="password"
+              required
+            />
+          </div>
+
+          <button type="submit" className={styles.submitBtn} disabled={loading}>
+            {loading ? "Checking..." : "Login to Play"}
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

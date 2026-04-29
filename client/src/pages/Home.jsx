@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getFields } from "../services/fieldService";
 import { Link } from "react-router";
+import styles from "./Home.module.css";
 
 export default function Home() {
   const [fields, setFields] = useState([]);
@@ -8,35 +9,68 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    async function fetchFields() {
+    let isMounted = true;
+
+    const fetchFields = async () => {
       try {
         setLoading(true);
         const data = await getFields();
-        console.log("All fields", data);
-        setFields(data);
+        if (isMounted) setFields(data);
       } catch (err) {
-        console.error("Fields Error", err);
-        setError(err.message);
+        if (isMounted) setError(err.message || "Failed to load fields");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
-    }
+    };
+
     fetchFields();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  if (loading && fields.length === 0) {
+    return (
+      <div className={styles.fullLoader}>
+        <div className={styles.spinner}></div>
+        <p>Loading maps...</p>
+      </div>
+    );
+  }
+
   return (
-    <div>
-      {loading && <p>loading...</p>}
-      {error && <p>{error}</p>}
-      <h1>Choose a field to play</h1>
-      {fields?.map((field) => (
-        <Link key={field.id} to={`/field/${field.id}`}>
-          <div>
-            <h3>{field.name}</h3>
-            <img src={field.thumbnailUrl} alt={field.name} />
-            <p>{field.description}</p>
-          </div>
-        </Link>
-      ))}
+    <div className={styles.container}>
+      {error && <p className={styles.error}>{error}</p>}
+
+      <h1 className={styles.title}>Find a scene and spot Waldo</h1>
+
+      <div className={styles.grid}>
+        {fields.map((field) => (
+          <Link
+            key={field.id}
+            to={`/field/${field.id}`}
+            className={styles.card}
+          >
+            <div className={styles.imageWrapper}>
+              <img
+                src={field.thumbnailUrl}
+                alt={field.name}
+                className={styles.thumbnail}
+                loading="lazy"
+              />
+              <div className={styles.overlay}>
+                <span>Play Now</span>
+              </div>
+            </div>
+
+            <div className={styles.cardContent}>
+              <h3 className={styles.fieldName}>{field.name}</h3>
+              <p className={styles.description}>{field.description}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }
