@@ -1,7 +1,11 @@
 <img width="1851" height="961" alt="Screenshot from 2026-04-30 11-30-55" src="https://github.com/user-attachments/assets/7348e449-6450-4ffa-9af7-28407aa63366" />
+
 # Where’s Waldo – Fullstack Game
 
 A fullstack “Where’s Waldo” style game where users search for hidden characters in large images, race against time, and compete on leaderboards.
+
+## Live Demo
+https://wheres-waldo-fullstack-git-main-mansuur-imans-projects.vercel.app/
 
 ## Features
 
@@ -32,10 +36,9 @@ A fullstack “Where’s Waldo” style game where users search for hidden chara
 ## Project Structure
 
 root/
-│
-├── client/ # React frontend
-├── server/ # Backend (API, DB, auth, game logic)
-└── README.md
+-  client/ # React frontend
+-  server/ # Backend (API, DB, auth, game logic)
+-  README.md
 
 ## Tech Stack
 
@@ -75,29 +78,29 @@ root/
 
 1. Clone repo
 
-   git clone <git@github.com:mansuur-iman/wheres-waldo-fullstack.git>
-   cd wheres-waldo-fullstack
+   - git clone git@github.com:mansuur-iman/wheres-waldo-fullstack.git
+   - cd wheres-waldo-fullstack
 
 2. Setup Backend
 
-   cd server
-   npm install
+   - cd server
+   - npm install
 
 Create .env:
 
-DATABASE_URL=<your_database_url>
-JWT_SECRET=<your_jwt_secret>
+- DATABASE_URL=<your_database_url>
+- JWT_SECRET=<your_jwt_secret>
 
 Run:
 
-npx prisma migrate dev
-npm run dev
+- npx prisma migrate dev
+- npm run dev
 
 3. Setup Frontend
 
-   cd client
-   npm install
-   npm run dev
+   - cd client
+   - npm install
+   - npm run dev
 
 ## Future Improvements
 
