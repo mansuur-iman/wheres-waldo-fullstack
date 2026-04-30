@@ -6,7 +6,7 @@ import { useAuth } from "../context/useAuth";
 
 export default function Navbar() {
   const { theme, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <nav className={styles.nav}>
@@ -27,13 +27,25 @@ export default function Navbar() {
           </button>
 
           <div className={styles.actions}>
-            <Link to="/login" className={styles.login}>
-              Login
-            </Link>
             {!user && (
-              <Link to="/register" className={styles.register}>
-                Register
-              </Link>
+              <>
+                <Link to="/login" className={styles.login}>
+                  Login
+                </Link>
+                <Link to="/register" className={styles.register}>
+                  Register
+                </Link>
+              </>
+            )}
+
+            {user && (
+              <button
+                onClick={logout}
+                className={styles.register}
+                style={{ border: "none " }}
+              >
+                Logout
+              </button>
             )}
           </div>
         </div>

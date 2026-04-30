@@ -2,7 +2,7 @@ import { useState } from "react";
 import { register } from "../services/authService";
 import { useNavigate } from "react-router";
 import { validate } from "../utils/validateRegister";
-import styles from "./Register.module.css"; // Added styles
+import styles from "./Register.module.css";
 
 export default function RegisterUser() {
   const [formData, setFormData] = useState({

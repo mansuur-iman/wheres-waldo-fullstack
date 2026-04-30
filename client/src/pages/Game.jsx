@@ -5,7 +5,7 @@ import { getFirstImage, sendGuess, nextImage } from "../services/fieldService";
 import styles from "./Game.module.css";
 
 export default function Game() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -27,6 +27,10 @@ export default function Game() {
   const containerRef = useRef(null);
 
   const TIMER_KEY = `game_timer_${id}`;
+
+  if (!user) {
+    navigate("/login");
+  }
 
   const formatTime = (seconds = 0) => {
     const m = Math.floor(seconds / 60)
