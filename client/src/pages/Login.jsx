@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { userLogin } from "../services/authService";
-import styles from "./Login.module.css"; // Added styles
+import styles from "./Login.module.css";
+import { useAuth } from "../context/useAuth";
 
 export function Login() {
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -30,8 +32,7 @@ export function Login() {
     try {
       setLoading(true);
       const data = await userLogin(formData);
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user)); // Stringify if it's an object
+      login(data.token, data.user);
       navigate("/");
     } catch (err) {
       setError(err.message);
