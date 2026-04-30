@@ -5,7 +5,7 @@
 A fullstack “Where’s Waldo” style game where users search for hidden characters in large images, race against time, and compete on leaderboards.
 
 ## Live Demo
-https://wheres-waldo-fullstack-git-main-mansuur-imans-projects.vercel.app/
+https://wheres-waldo-fullstack.vercel.app/
 
 ## Features
 
