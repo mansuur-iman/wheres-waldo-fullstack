@@ -1,3 +1,5 @@
+<img width="1851" height="961" alt="Screenshot from 2026-04-30 11-30-55" src="https://github.com/user-attachments/assets/7348e449-6450-4ffa-9af7-28407aa63366" />
+
 # Where's Waldo – Fullstack Game
 
 A fullstack "Where's Waldo" style game where players find hidden characters across multi-image levels, race against a timer, and compete on per-field leaderboards.
