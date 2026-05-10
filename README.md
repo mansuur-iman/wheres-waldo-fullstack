@@ -1,112 +1,122 @@
-<img width="1851" height="961" alt="Screenshot from 2026-04-30 11-30-55" src="https://github.com/user-attachments/assets/7348e449-6450-4ffa-9af7-28407aa63366" />
+# Where's Waldo – Fullstack Game
 
-# Where’s Waldo – Fullstack Game
+A fullstack "Where's Waldo" style game where players find hidden characters across multi-image levels, race against a timer, and compete on per-field leaderboards.
 
-A fullstack “Where’s Waldo” style game where users search for hidden characters in large images, race against time, and compete on leaderboards.
+**Live:** https://wheres-waldo-fullstack.vercel.app/ &nbsp;|&nbsp; **Client source:** [client/](./client) &nbsp;|&nbsp; **Server source:** [server/](./server)
 
-## Live Demo
-https://wheres-waldo-fullstack.vercel.app/
+---
 
-## Features
+## How the Backend Works
 
-- User authentication (login required)
-- Multiple fields (levels)
-- Interactive image click detection
-- Real-time timer
-- Multi-image progression
-- Leaderboard per field
-- Field completion tracking
+The backend is an Express REST API backed by PostgreSQL (via Prisma ORM). It handles authentication, game state, coordinate validation, and leaderboard logic — all enforced server-side so the client cannot manipulate game outcomes.
 
-## How It Works
+### Coordinate Validation
 
-1. User lands on the homepage with available fields
-2. Selecting a field:
-   Redirects to login if not authenticated
-3. After login:
-   Game starts with an image and target characters
-4. Player:
-   Clicks on the image to find characters
-   Timer runs during gameplay
-5. When all targets in an image are found:
-   Player proceeds to the next image
-6. When all images in a field are completed:
-   Field is marked complete
-   Leaderboard is displayed
+The core technical challenge was validating player guesses without leaking character positions to the client.
 
-## Project Structure
+- Character positions (bounding boxes) are stored in PostgreSQL and never sent to the frontend
+- When a player clicks the image, the client sends only the raw `(x, y)` coordinates
+- The server compares those coordinates against the stored bounds for the requested character
+- If the guess is correct, the server responds with a hit and the updated list of found characters
+- If incorrect, it returns a miss — no position data is revealed
 
-root/
--  client/ # React frontend
--  server/ # Backend (API, DB, auth, game logic)
--  README.md
+This means a player cannot inspect network responses to find where characters are hidden.
+
+### Server-Side Game Integrity
+
+Progress and image sequencing are controlled entirely by the server:
+
+- Each field (level) contains multiple images in a fixed order
+- The server tracks which image a user is currently on, stored in a `Progress` record in PostgreSQL
+- The next image is only served after the server confirms all characters in the current image have been found
+- A `Progress` record is created on the user's first request to a field and updated on each image completion
+- When no images remain, the field is marked complete and the leaderboard is returned
+
+A client cannot skip images or request future images directly — the server rejects out-of-sequence requests.
+
+### Leaderboard
+
+- Each user has one score per field, recorded as time taken to complete all images
+- On field completion, the server queries all completion records for that field, sorts by fastest time, and returns the ranked results
+- Rankings are computed server-side — the client receives a sorted list, nothing more
+
+### Authentication
+
+- JWT-based stateless authentication
+- Passwords hashed with bcrypt before storage
+- Protected routes require a valid Bearer token in the `Authorization` header
+- Unauthenticated users are redirected to login before a field can be started
+
+---
 
 ## Tech Stack
 
-### Frontend
+| Layer | Technology |
+|---|---|
+| Runtime | Node.js |
+| Framework | Express |
+| ORM | Prisma |
+| Database | PostgreSQL |
+| Auth | JWT + bcrypt |
+| Validation | express-validator |
+| Frontend | React, React Router, CSS Modules |
 
-- React
-- React Router
-- CSS Modules
+---
 
-### Backend
+## Project Structure
 
-- Node.js
-- Express
-- Prisma ORM
+```
+root/
+├── client/         # React frontend
+│   └── src/
+└── server/         # Express API
+    ├── controllers/
+    ├── routes/
+    ├── middlewares/
+    └── prisma/
+        └── schema.prisma
+```
 
-### Database
+---
 
-- PostgreSQL
+## Running Locally
 
-## Authentication
+### 1. Clone the repo
 
-- Token-based authentication
-- Stored in localStorage
-- Global auth state managed via React Context
+```bash
+git clone git@github.com:mansuur-iman/wheres-waldo-fullstack.git
+cd wheres-waldo-fullstack
+```
 
-## Leaderboard Logic
+### 2. Backend setup
 
-### Tracks:
+```bash
+cd server
+npm install
+```
 
-- User
-- Field
-- Time taken
-- Each user has one score per field
-- Rankings are based on fastest completion time
+Create a `.env` file:
 
-## Setup Instructions
+```env
+DATABASE_URL=your_postgresql_connection_string
+JWT_SECRET=your_jwt_secret
+PORT=3000
+```
 
-1. Clone repo
+Run migrations and start the server:
 
-   - git clone git@github.com:mansuur-iman/wheres-waldo-fullstack.git
-   - cd wheres-waldo-fullstack
+```bash
+npx prisma migrate dev
+npm run dev
+```
 
-2. Setup Backend
+### 3. Frontend setup
 
-   - cd server
-   - npm install
+```bash
+cd ../client
+npm install
+npm run dev
+```
 
-Create .env:
+---
 
-- DATABASE_URL=<your_database_url>
-- JWT_SECRET=<your_jwt_secret>
-
-Run:
-
-- npx prisma migrate dev
-- npm run dev
-
-3. Setup Frontend
-
-   - cd client
-   - npm install
-   - npm run dev
-
-## Future Improvements
-
-1. Image zoom functionality
-2. Difficulty levels
-3. Global leaderboard
-
-Author
-Mansur
